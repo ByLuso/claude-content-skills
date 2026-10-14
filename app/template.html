@@ -291,8 +291,8 @@ const BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
 const FACTORY = ["going-viral", "viral-hook-writer", "reel-scripter", "reel-builder", "caption-and-hashtags", "comment-responder"].filter(id => BY_ID[id]);
 const GROUP_ORDER = ["Estudiar", "Crear", "Distribuir y convertir", "Crecer y analizar", "Más herramientas"];
 const EXAMPLE = {
-  niche: "Divulgación: cómo funcionan los aparatos por dentro", handle: "@destripando.cosas",
-  audience: "Curiosos de 18-40 que quieren entender la tecnología de casa", topic: "Qué hay dentro de un microondas y por qué calienta",
+  niche: "Divulgación: cómo funcionan por dentro los aparatos del hospital y de casa", handle: "@destripando.cosas",
+  audience: "Curiosos, pacientes y sanitarios que quieren entender los aparatos que usan o les ponen", topic: "Cómo funciona un glucómetro",
   goal: "follows", cta: "", offer: "", platform: "TikTok", lang: "Español",
   voice: "Curiosa y directa, frases cortas, explica sin tecnicismos y enseña la pieza real."
 };
@@ -311,7 +311,9 @@ let ctl = null;
 /* ---------- brief ---------- */
 const briefFields = ["niche", "handle", "audience", "topic", "goal", "cta", "offer", "platform", "lang", "voice"];
 function loadBrief() {
-  const saved = store.get("brief", null);
+  let saved = store.get("brief", null);
+  // Briefs saved from the first version still carry its fitness-coach placeholder; start those over.
+  if (saved && (saved.handle === "@fuerte.en.casa" || /^Mujeres ocupadas/.test(saved.audience || ""))) { saved = null; store.set("brief", null); }
   const b = saved || EXAMPLE;
   briefFields.forEach(f => { $("b_" + f).value = b[f] || ""; });
   $("exampleNote").hidden = !!saved;
