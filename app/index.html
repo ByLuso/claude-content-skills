@@ -126,6 +126,25 @@ button.ghost:hover { border-color: var(--muted); }
 .thinking { font: 13px var(--f-mono); color: var(--accent); }
 .unavailable { border: 1px dashed var(--warn); color: var(--ink); border-radius: var(--r); padding: 12px 14px; font-size: 14px; }
 .unavailable code { font-family: var(--f-mono); font-size: 13px; }
+.tt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 12px; }
+.tt-head { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+.tt-head h2 { margin: 0; font: 700 17px/1.2 var(--f-display); }
+.tt-head p { margin: 0; color: var(--muted); font-size: 13px; min-width: 0; flex: 1 1 260px; }
+.file-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; font: 600 14px var(--f-body); border-radius: 8px; padding: 9px 14px; background: var(--ink); color: var(--bg); cursor: pointer; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-btn:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.kpi { background: var(--bg); border-radius: 8px; padding: 8px 10px; display: grid; gap: 1px; }
+.kpi span { font: 600 10px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi b { font: 700 20px/1.2 var(--f-display); font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.spark { width: 100%; height: 90px; display: block; }
+.spark .area { fill: var(--accent-soft); }
+.spark .ln { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark-cap { display: flex; justify-content: space-between; gap: 8px; font: 11px var(--f-mono); color: var(--muted); }
+.files { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; gap: 6px; align-items: center; font: 12px var(--f-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 10px; }
+.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; padding: 0 6px; }
 .playbook summary { cursor: pointer; font: 600 13px var(--f-body); color: var(--muted); }
 .playbook pre { font: 12px/1.5 var(--f-mono); white-space: pre-wrap; max-height: 360px; overflow: auto; background: var(--bg); border-radius: 8px; padding: 12px; }
 footer { color: var(--muted); font-size: 12px; }
@@ -145,7 +164,7 @@ footer a { color: var(--accent); }
   <details class="brief" id="brief" open>
     <summary><h2>Tu brief</h2><span class="sum" id="briefSum"></span></summary>
     <form class="grid" id="briefForm" autocomplete="off">
-      <p class="example-note" id="exampleNote">Datos de ejemplo. Cámbialos por los de tu cuenta y se guardan en este navegador.</p>
+      <p class="example-note" id="exampleNote">Propuesta inicial para @destripando.cosas. Ajústala y se guarda en este navegador.</p>
       <label for="b_niche">Nicho / negocio<input id="b_niche" name="niche"></label>
       <label for="b_handle">@ cuenta<input id="b_handle" name="handle"></label>
       <label for="b_audience">Audiencia<input id="b_audience" name="audience"></label>
@@ -160,6 +179,11 @@ footer a { color: var(--accent); }
       </label>
       <label for="b_cta">Palabra clave CTA<input id="b_cta" name="cta"></label>
       <label for="b_offer">Recurso / oferta que entregas<input id="b_offer" name="offer"></label>
+      <label for="b_platform">Plataforma
+        <select id="b_platform" name="platform">
+          <option>TikTok</option><option>Instagram Reels</option><option>TikTok e Instagram Reels</option><option>YouTube Shorts</option>
+        </select>
+      </label>
       <label for="b_lang">Idioma de salida
         <select id="b_lang" name="lang">
           <option>Español</option><option>English</option><option>Português</option><option>Français</option><option>Italiano</option>
@@ -168,6 +192,25 @@ footer a { color: var(--accent); }
       <label for="b_voice" style="grid-column: 1 / -1">Tu voz (cómo hablas, palabras que usas, qué evitas)<textarea id="b_voice" name="voice" rows="2"></textarea></label>
     </form>
   </details>
+
+  <section class="tt" id="tiktok" aria-labelledby="ttTitle">
+    <div class="tt-head">
+      <h2 id="ttTitle">Mis datos de TikTok</h2>
+      <p>En TikTok Studio → Analíticas, descarga tus datos (Resumen, Contenido, Seguidores…) y súbelos aquí. Se quedan en este navegador.</p>
+      <label class="file-btn" for="ttFile">Importar CSV<input type="file" id="ttFile" accept=".csv,text/csv" multiple></label>
+    </div>
+    <div class="files" id="ttFiles"></div>
+    <div id="ttOverview" hidden>
+      <div class="kpis" id="ttKpis"></div>
+      <svg class="spark" id="ttSpark" viewBox="0 0 100 40" preserveAspectRatio="none" role="img" aria-label="Visualizaciones por día"></svg>
+      <div class="spark-cap"><span id="ttFrom"></span><span id="ttPeak"></span><span id="ttTo"></span></div>
+    </div>
+    <div class="row" id="ttActions" hidden>
+      <label class="check" for="ttUse"><input type="checkbox" id="ttUse" checked> Usar mis datos de TikTok en todas las herramientas</label>
+      <span class="spacer"></span>
+      <button class="ghost" type="button" id="ttAnalyze">Analizar mi TikTok</button>
+    </div>
+  </section>
 
   <main>
     <nav class="rack" aria-label="Herramientas">
@@ -237,10 +280,10 @@ const BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
 const FACTORY = ["going-viral", "viral-hook-writer", "reel-scripter", "reel-builder", "caption-and-hashtags", "comment-responder"].filter(id => BY_ID[id]);
 const GROUP_ORDER = ["Estudiar", "Crear", "Distribuir y convertir", "Crecer y analizar", "Más herramientas"];
 const EXAMPLE = {
-  niche: "Entrenador personal online para mujeres de 30-45", handle: "@fuerte.en.casa",
-  audience: "Mujeres ocupadas que quieren ganar fuerza en casa en 20 minutos", topic: "Por qué no ves resultados aunque entrenes 5 días",
-  goal: "leads", cta: "PLAN", offer: "Plan gratis de 4 semanas en PDF", lang: "Español",
-  voice: "Cercana y directa, tuteo, frases cortas, sin jerga de gimnasio ni promesas milagro."
+  niche: "Divulgación: cómo funcionan los aparatos por dentro", handle: "@destripando.cosas",
+  audience: "Curiosos de 18-40 que quieren entender la tecnología de casa", topic: "Qué hay dentro de un microondas y por qué calienta",
+  goal: "follows", cta: "", offer: "", platform: "TikTok", lang: "Español",
+  voice: "Curiosa y directa, frases cortas, explica sin tecnicismos y enseña la pieza real."
 };
 const $ = id => document.getElementById(id);
 const store = {
@@ -255,7 +298,7 @@ let view = { mode: "factory", tool: null, focus: null };
 let ctl = null;
 
 /* ---------- brief ---------- */
-const briefFields = ["niche", "handle", "audience", "topic", "goal", "cta", "offer", "lang", "voice"];
+const briefFields = ["niche", "handle", "audience", "topic", "goal", "cta", "offer", "platform", "lang", "voice"];
 function loadBrief() {
   const saved = store.get("brief", null);
   const b = saved || EXAMPLE;
@@ -358,7 +401,7 @@ const GOALS = { saves: "saves", shares: "shares", follows: "follows", leads: "le
 function buildPrompt(s, material, context) {
   const b = brief();
   const parts = [
-    `You are running the "${s.title}" skill from Ootto's Claude Content Skills for an Instagram creator. Use the skill below as your playbook and produce its deliverable now.`,
+    `You are running the "${s.title}" skill from Ootto's Claude Content Skills for a short-form video creator publishing on ${b.platform || "TikTok"}. Use the skill below as your playbook and produce its deliverable now. The playbook is written for Instagram; adapt formats, lengths, hashtags and features to ${b.platform || "TikTok"}.`,
     `Rules for this run:
 - Do not ask clarifying questions. Where the playbook asks the user for something that is missing, make a sensible assumption from the brief and label it "(assumed)".
 - You cannot browse the web, watch videos, download files or read a vault. If a step needs that, work from the material provided and say in one line what the user should paste next time for a sharper result.
@@ -373,9 +416,12 @@ Topic of this piece: ${b.topic || "(not given)"}
 Goal: ${GOALS[b.goal] || b.goal}
 CTA keyword: ${b.cta || "(not given)"}
 Resource / offer delivered in DM: ${b.offer || "(not given)"}
+Platform: ${b.platform || "TikTok"}
 Brand voice: ${b.voice || "(not given)"}
 </brief>`
   ];
+  const tt = tiktokBlock();
+  if (tt) parts.push(`<my_tiktok_data>\nReal analytics exported from the creator's TikTok Studio. Ground every claim about performance in these numbers; do not invent metrics that are not here.\n${tt}\n</my_tiktok_data>`);
   if (material) parts.push(`<material>\n${material}\n</material>`);
   if (context) parts.push(`<previous_steps>\nOutputs from earlier skills in this session. Build on them (e.g. use the top-ranked hook, the finished script) instead of starting over.\n${context}\n</previous_steps>`);
   return parts.join("\n\n");
@@ -480,7 +526,99 @@ $("dlBtn").onclick = async () => {
   try { await downloads.save({ filename: name, data: allMarkdown() }); } catch {}
 };
 
+/* ---------- TikTok import ---------- */
+let tiktok = store.get("tiktok", []);   // [{name, header, rows}]
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); f = ""; if (row.some(x => x !== "")) rows.push(row); row = []; }
+    else f += c;
+  }
+  row.push(f); if (row.some(x => x !== "")) rows.push(row);
+  return rows;
+}
+const num = v => { const n = Number(String(v).replace(/[^\d.-]/g, "")); return isFinite(n) ? n : 0; };
+const fmt = n => n.toLocaleString("es-ES");
+const pct = (a, b) => b ? (a / b * 100).toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " %" : "–";
+function overviewOf(file) {
+  const h = file.header.map(x => x.trim().toLowerCase());
+  const col = name => h.indexOf(name);
+  const iDate = col("date"), iViews = col("video views");
+  if (iDate < 0 || iViews < 0) return null;
+  const keys = [["Video Views", "Visualizaciones"], ["Profile Views", "Visitas al perfil"], ["Likes", "Me gusta"], ["Comments", "Comentarios"], ["Shares", "Compartidos"]];
+  const days = file.rows.map(r => ({ date: r[iDate], views: num(r[iViews]) }));
+  const totals = keys.map(([k, label]) => { const i = col(k.toLowerCase()); return { label, value: i < 0 ? null : file.rows.reduce((a, r) => a + num(r[i]), 0) }; });
+  return { days, totals };
+}
+function tiktokBlock() {
+  if (!tiktok.length || !$("ttUse").checked) return "";
+  let out = "", budget = 40000;
+  for (const f of tiktok) {
+    const ov = overviewOf(f);
+    let block = `\n### File: ${f.name}\n`;
+    if (ov) {
+      const v = ov.totals[0].value;
+      block += "Totals: " + ov.totals.filter(t => t.value != null).map(t => `${t.label} ${t.value}` + (t !== ov.totals[0] ? ` (${pct(t.value, v)} of views)` : "")).join(", ") + "\n";
+    }
+    block += [f.header, ...f.rows.slice(0, 400)].map(r => r.join(",")).join("\n") + "\n";
+    if (block.length > budget) block = block.slice(0, budget) + "\n…(truncated)\n";
+    out += block; budget -= block.length;
+    if (budget <= 0) break;
+  }
+  return out;
+}
+function renderTikTok() {
+  const files = $("ttFiles"); files.textContent = "";
+  tiktok.forEach((f, i) => {
+    const c = document.createElement("span"); c.className = "chip";
+    c.textContent = f.name + " · " + f.rows.length + " filas";
+    const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Quitar " + f.name);
+    x.onclick = () => { tiktok.splice(i, 1); store.set("tiktok", tiktok); renderTikTok(); };
+    c.append(x); files.append(c);
+  });
+  $("ttActions").hidden = !tiktok.length;
+  const f = tiktok.find(overviewOf);
+  $("ttOverview").hidden = !f;
+  if (!f) return;
+  const ov = overviewOf(f), views = ov.totals[0].value;
+  const k = $("ttKpis"); k.textContent = "";
+  for (const t of ov.totals) {
+    if (t.value == null) continue;
+    const d = document.createElement("div"); d.className = "kpi";
+    const a = document.createElement("span"); a.textContent = t.label;
+    const b = document.createElement("b"); b.textContent = fmt(t.value);
+    const s = document.createElement("small"); s.textContent = t === ov.totals[0] ? ov.days.filter(d => d.views > 0).length + " días con vistas" : pct(t.value, views) + " de las vistas";
+    d.append(a, b, s); k.append(d);
+  }
+  const max = Math.max(1, ...ov.days.map(d => d.views)), n = Math.max(1, ov.days.length - 1);
+  const pts = ov.days.map((d, i) => [i / n * 100, 38 - d.views / max * 34]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" ");
+  $("ttSpark").innerHTML = `<path class="area" d="${line} L100 40 L0 40 Z"></path><path class="ln" d="${line}"></path>`;
+  const peak = ov.days.reduce((a, d) => d.views > a.views ? d : a, ov.days[0]);
+  $("ttFrom").textContent = ov.days[0].date;
+  $("ttPeak").textContent = "Pico: " + fmt(peak.views) + " · " + peak.date;
+  $("ttTo").textContent = ov.days[ov.days.length - 1].date;
+}
+$("ttFile").addEventListener("change", async e => {
+  for (const file of e.target.files) {
+    const rows = parseCSV(await file.text());
+    if (rows.length < 2) continue;
+    tiktok = tiktok.filter(f => f.name !== file.name).concat({ name: file.name, header: rows[0], rows: rows.slice(1) });
+  }
+  e.target.value = "";
+  store.set("tiktok", tiktok); renderTikTok();
+});
+$("ttUse").addEventListener("change", () => store.set("ttUse", $("ttUse").checked));
+$("ttAnalyze").onclick = () => { openTool("analytics-readout"); $("runTool").focus(); };
+
 /* ---------- boot ---------- */
+$("ttUse").checked = store.get("ttUse", true);
+renderTikTok();
 loadBrief();
 $("f_material").value = store.get("material:factory", "");
 view.focus = order[order.length - 1] || FACTORY[0];
