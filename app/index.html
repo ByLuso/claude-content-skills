@@ -142,6 +142,15 @@ button.ghost:hover { border-color: var(--muted); }
 .spark .area { fill: var(--accent-soft); }
 .spark .ln { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .spark-cap { display: flex; justify-content: space-between; gap: 8px; font: 11px var(--f-mono); color: var(--muted); }
+.vids { overflow-x: auto; }
+.vids table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.vids th { font: 600 10px var(--f-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.vids td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.vids th:first-child, .vids td:first-child { text-align: left; white-space: normal; min-width: 220px; }
+.vids td:first-child a { color: var(--ink); text-decoration: none; }
+.vids td:first-child a:hover { color: var(--accent); }
+.vids td:first-child small { display: block; color: var(--muted); font-size: 11px; }
+.vids .top { color: var(--accent); font-weight: 600; }
 .files { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; gap: 6px; align-items: center; font: 12px var(--f-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 10px; }
 .chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; padding: 0 6px; }
@@ -205,6 +214,7 @@ footer a { color: var(--accent); }
       <svg class="spark" id="ttSpark" viewBox="0 0 100 40" preserveAspectRatio="none" role="img" aria-label="Visualizaciones por día"></svg>
       <div class="spark-cap"><span id="ttFrom"></span><span id="ttPeak"></span><span id="ttTo"></span></div>
     </div>
+    <div class="vids" id="ttVids" hidden></div>
     <div class="row" id="ttActions" hidden>
       <label class="check" for="ttUse"><input type="checkbox" id="ttUse" checked> Usar mis datos de TikTok en todas las herramientas</label>
       <span class="spacer"></span>
@@ -555,6 +565,40 @@ function overviewOf(file) {
   const totals = keys.map(([k, label]) => { const i = col(k.toLowerCase()); return { label, value: i < 0 ? null : file.rows.reduce((a, r) => a + num(r[i]), 0) }; });
   return { days, totals };
 }
+function videosOf(file) {
+  const h = file.header.map(x => x.trim().toLowerCase());
+  const c = n => h.indexOf(n);
+  const it = c("video title"), iv = c("total views");
+  if (it < 0 || iv < 0) return null;
+  const il = c("total likes"), ic = c("total comments"), is = c("total shares"), ik = c("video link"), ip = c("post time");
+  return file.rows.map(r => ({ title: r[it], link: ik < 0 ? "" : r[ik], posted: ip < 0 ? "" : r[ip], views: num(r[iv]),
+    likes: il < 0 ? 0 : num(r[il]), comments: ic < 0 ? 0 : num(r[ic]), shares: is < 0 ? 0 : num(r[is]) }))
+    .sort((a, b) => b.views - a.views);
+}
+function renderVideos() {
+  const box = $("ttVids"), f = tiktok.find(videosOf);
+  box.hidden = !f; box.textContent = "";
+  if (!f) return;
+  const vids = videosOf(f).slice(0, 8);
+  const best = k => Math.max(...vids.map(v => v.views ? v[k] / v.views : 0));
+  const t = document.createElement("table");
+  t.innerHTML = "<thead><tr><th>Vídeo (top " + vids.length + " por vistas)</th><th>Vistas</th><th>Me gusta</th><th>Compartidos</th><th>Coment.</th></tr></thead>";
+  const tb = document.createElement("tbody");
+  for (const v of vids) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    const name = v.title.replace(/#\S+/g, "").replace(/\s+/g, " ").trim();
+    const a = document.createElement(v.link.startsWith("https://") ? "a" : "span");
+    if (a.tagName === "A") { a.href = v.link; a.target = "_blank"; a.rel = "noopener"; }
+    a.textContent = name.length > 90 ? name.slice(0, 88) + "…" : name;
+    const sm = document.createElement("small"); sm.textContent = v.posted;
+    td.append(a, sm); tr.append(td);
+    const cells = [[fmt(v.views)], [pct(v.likes, v.views), v.views && v.likes / v.views === best("likes")], [pct(v.shares, v.views), v.views && v.shares / v.views === best("shares")], [fmt(v.comments)]];
+    for (const [txt, top] of cells) { const c = document.createElement("td"); c.textContent = txt; if (top) c.className = "top"; tr.append(c); }
+    tb.append(tr);
+  }
+  t.append(tb); box.append(t);
+}
 function tiktokBlock() {
   if (!tiktok.length || !$("ttUse").checked) return "";
   let out = "", budget = 40000;
@@ -582,6 +626,7 @@ function renderTikTok() {
     c.append(x); files.append(c);
   });
   $("ttActions").hidden = !tiktok.length;
+  renderVideos();
   const f = tiktok.find(overviewOf);
   $("ttOverview").hidden = !f;
   if (!f) return;
