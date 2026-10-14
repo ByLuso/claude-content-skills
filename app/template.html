@@ -286,6 +286,7 @@ footer a { color: var(--accent); }
 
 <script>
 const SKILLS = /*__SKILLS__*/[];
+const NEEDS_DATA = ["analytics-readout", "content-audit", "social-analytics-report", "best-time-scheduler", "launch-retrospective"];
 const BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
 const FACTORY = ["going-viral", "viral-hook-writer", "reel-scripter", "reel-builder", "caption-and-hashtags", "comment-responder"].filter(id => BY_ID[id]);
 const GROUP_ORDER = ["Estudiar", "Crear", "Distribuir y convertir", "Crecer y analizar", "Más herramientas"];
@@ -416,6 +417,7 @@ function buildPrompt(s, material, context) {
 - Do not ask clarifying questions. Where the playbook asks the user for something that is missing, make a sensible assumption from the brief and label it "(assumed)".
 - You cannot browse the web, watch videos, download files or read a vault. If a step needs that, work from the material provided and say in one line what the user should paste next time for a sharper result.
 - Ignore installation, CLI and "run this command" steps in the playbook; deliver the content itself.
+- ${tiktokBlock() ? "The creator's real TikTok analytics are attached below in <my_tiktok_data>. They ARE the insights/data the playbook asks to paste: analyse them directly and never ask for a CSV or say the data is missing." : "No analytics were provided."}
 - Write the whole answer in ${b.lang || "Español"}. Use Markdown with clear headings, lists and tables where they help. Model formats, never copy someone else's words.`,
     `<skill>\n${s.body}\n</skill>`,
     `<brief>
@@ -478,6 +480,12 @@ function busy(on, mode) {
 $("runTool").onclick = async () => {
   const id = view.tool; if (!id || !sample) return;
   const msg = $("toolMsg"); msg.className = "msg"; msg.textContent = "";
+  if (NEEDS_DATA.includes(id) && !tiktokBlock() && !$("t_material").value.trim()) {
+    msg.className = "msg err";
+    msg.textContent = "Esta herramienta necesita tus datos. Pulsa «Importar CSV» en «Mis datos de TikTok» (con la casilla marcada) o pega las cifras arriba.";
+    $("tiktok").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   view.focus = id; renderOut();
   $("out").innerHTML = '<p class="thinking">Claude está pensando… (suele tardar entre 10 y 60 s)</p>';
   busy(true, "tool");
@@ -659,7 +667,7 @@ $("ttFile").addEventListener("change", async e => {
   store.set("tiktok", tiktok); renderTikTok();
 });
 $("ttUse").addEventListener("change", () => store.set("ttUse", $("ttUse").checked));
-$("ttAnalyze").onclick = () => { openTool("analytics-readout"); $("runTool").focus(); };
+$("ttAnalyze").onclick = () => { openTool("analytics-readout"); $("t_chain").checked = false; $("runTool").click(); };
 
 /* ---------- boot ---------- */
 $("ttUse").checked = store.get("ttUse", true);
