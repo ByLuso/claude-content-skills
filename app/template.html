@@ -1,0 +1,496 @@
+<title>Reel Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<style>
+/* Layout: a production desk. Brief strip on top, tool rack on the left, the take (output) on the right. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --muted: #5d6270;
+  --line: #dfe2e8;
+  --accent: #e2560a;
+  --accent-ink: #ffffff;
+  --accent-soft: #fdeee5;
+  --ok: #1d7a4c;
+  --warn: #a35a00;
+  --err: #b42318;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --surface: #1a1d23; --ink: #eceef2; --muted: #a0a6b3; --line: #2c3039;
+    --accent: #ff7a33; --accent-ink: #1a0d05; --accent-soft: #33200f;
+    --ok: #4cc38a; --warn: #f0a646; --err: #ff6b5e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --surface: #1a1d23; --ink: #eceef2; --muted: #a0a6b3; --line: #2c3039;
+  --accent: #ff7a33; --accent-ink: #1a0d05; --accent-soft: #33200f;
+  --ok: #4cc38a; --warn: #f0a646; --err: #ff6b5e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 18px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { font: 800 clamp(28px, 4vw, 40px)/1 var(--f-display); letter-spacing: -0.02em; margin: 0; }
+.brand h1 b { color: var(--accent); font-weight: 800; }
+.brand p { margin: 0; color: var(--muted); }
+.status { font: 12px/1.4 var(--f-mono); color: var(--muted); }
+.status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+.status.on .dot { background: var(--ok); }
+.status.off .dot { background: var(--warn); }
+
+/* Brief */
+.brief { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.brief summary { cursor: pointer; padding: 14px 16px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; list-style: none; }
+.brief summary::-webkit-details-marker { display: none; }
+.brief summary h2 { margin: 0; font: 700 17px/1.2 var(--f-display); }
+.brief summary .sum { color: var(--muted); font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
+.brief summary::after { content: "Editar"; margin-left: auto; font: 600 12px var(--f-mono); color: var(--accent); }
+.brief[open] summary::after { content: "Cerrar"; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; padding: 4px 16px 16px; }
+label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+input, select, textarea { font: 14px/1.45 var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 84px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, .tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.example-note { grid-column: 1 / -1; font: 12px var(--f-mono); color: var(--warn); margin: 0; }
+
+/* Main */
+main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+.rack { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 860px) { .rack { position: static; max-height: 46vh; } }
+.factory-btn { text-align: left; border: 0; border-radius: 8px; padding: 12px; background: var(--ink); color: var(--bg); cursor: pointer; display: grid; gap: 2px; }
+.factory-btn strong { font: 700 15px var(--f-display); }
+.factory-btn span { font-size: 12px; opacity: 0.8; }
+.factory-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.group h3 { margin: 8px 4px 4px; font: 600 11px var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.tool { display: grid; gap: 1px; width: 100%; text-align: left; border: 0; background: none; color: var(--ink); padding: 7px 8px; border-radius: 7px; cursor: pointer; font: inherit; }
+.tool:hover { background: var(--bg); }
+.tool[aria-pressed="true"] { background: var(--accent-soft); }
+.tool b { font-weight: 600; font-size: 14px; }
+.tool small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.tool .done { color: var(--ok); font: 600 10px var(--f-mono); margin-left: 6px; }
+
+.desk { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel h2 { margin: 0; font: 800 clamp(22px, 3vw, 28px)/1.1 var(--f-display); letter-spacing: -0.01em; text-wrap: balance; }
+.panel .tag { margin: 0; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+.check input { width: auto; }
+button.primary, button.ghost { font: 600 14px var(--f-body); border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); }
+button.primary:disabled { opacity: 0.55; cursor: progress; }
+button.ghost { background: none; color: var(--ink); border: 1px solid var(--line); }
+button.ghost:hover { border-color: var(--muted); }
+.spacer { flex: 1; }
+.msg { font-size: 13px; color: var(--muted); }
+.msg.err { color: var(--err); }
+
+/* Factory stepper: the order is the real pipeline order */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; font-size: 13px; cursor: pointer; background: var(--bg); }
+.steps li::before { content: "Paso " counter(s); font: 600 10px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.steps li[data-state="running"] { border-color: var(--accent); }
+.steps li[data-state="running"]::after { content: "Escribiendo…"; font: 11px var(--f-mono); color: var(--accent); }
+.steps li[data-state="done"]::after { content: "Listo"; font: 11px var(--f-mono); color: var(--ok); }
+.steps li[data-state="error"]::after { content: "Error"; font: 11px var(--f-mono); color: var(--err); }
+.steps li[aria-current="true"] { background: var(--accent-soft); }
+
+.take { min-height: 220px; }
+.take .label { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font: 600 11px var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.out { min-width: 0; overflow-wrap: anywhere; }
+.out:empty::before { content: attr(data-empty); color: var(--muted); }
+.out h1, .out h2, .out h3 { font-family: var(--f-display); line-height: 1.2; text-wrap: balance; margin: 1.1em 0 0.4em; }
+.out h1 { font-size: 22px; } .out h2 { font-size: 19px; } .out h3 { font-size: 16px; }
+.out p, .out li { max-width: 72ch; }
+.out code { font: 13px var(--f-mono); background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+.out pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; white-space: pre-wrap; }
+.out pre code { background: none; padding: 0; }
+.out .tbl { overflow-x: auto; }
+.out table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.out th, .out td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.out th { background: var(--bg); }
+.out blockquote { margin: 0; padding-left: 12px; border-left: 3px solid var(--accent); color: var(--muted); }
+.thinking { font: 13px var(--f-mono); color: var(--accent); }
+.unavailable { border: 1px dashed var(--warn); color: var(--ink); border-radius: var(--r); padding: 12px 14px; font-size: 14px; }
+.unavailable code { font-family: var(--f-mono); font-size: 13px; }
+.playbook summary { cursor: pointer; font: 600 13px var(--f-body); color: var(--muted); }
+.playbook pre { font: 12px/1.5 var(--f-mono); white-space: pre-wrap; max-height: 360px; overflow: auto; background: var(--bg); border-radius: 8px; padding: 12px; }
+footer { color: var(--muted); font-size: 12px; }
+footer a { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .steps li, .tool { transition: background 0.15s, border-color 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Reel<b>Studio</b></h1>
+      <p>Las skills de contenido de Ootto, listas para ejecutar.</p>
+    </div>
+    <div class="status" id="status"><span class="dot"></span>Conectando con Claude…</div>
+  </header>
+
+  <details class="brief" id="brief" open>
+    <summary><h2>Tu brief</h2><span class="sum" id="briefSum"></span></summary>
+    <form class="grid" id="briefForm" autocomplete="off">
+      <p class="example-note" id="exampleNote">Datos de ejemplo. Cámbialos por los de tu cuenta y se guardan en este navegador.</p>
+      <label for="b_niche">Nicho / negocio<input id="b_niche" name="niche"></label>
+      <label for="b_handle">@ cuenta<input id="b_handle" name="handle"></label>
+      <label for="b_audience">Audiencia<input id="b_audience" name="audience"></label>
+      <label for="b_topic">Tema de la pieza<input id="b_topic" name="topic"></label>
+      <label for="b_goal">Objetivo
+        <select id="b_goal" name="goal">
+          <option value="saves">Guardados</option>
+          <option value="shares">Compartidos</option>
+          <option value="follows">Seguidores</option>
+          <option value="leads">Leads (DMs)</option>
+        </select>
+      </label>
+      <label for="b_cta">Palabra clave CTA<input id="b_cta" name="cta"></label>
+      <label for="b_offer">Recurso / oferta que entregas<input id="b_offer" name="offer"></label>
+      <label for="b_lang">Idioma de salida
+        <select id="b_lang" name="lang">
+          <option>Español</option><option>English</option><option>Português</option><option>Français</option><option>Italiano</option>
+        </select>
+      </label>
+      <label for="b_voice" style="grid-column: 1 / -1">Tu voz (cómo hablas, palabras que usas, qué evitas)<textarea id="b_voice" name="voice" rows="2"></textarea></label>
+    </form>
+  </details>
+
+  <main>
+    <nav class="rack" aria-label="Herramientas">
+      <button class="factory-btn" id="factoryBtn" type="button" aria-pressed="true">
+        <strong>Fábrica completa</strong>
+        <span>Estrategia → hooks → guion → reel → caption → leads</span>
+      </button>
+      <input id="filter" type="search" placeholder="Buscar entre las herramientas" aria-label="Buscar herramienta">
+      <div id="tools"></div>
+    </nav>
+
+    <section class="desk">
+      <div class="unavailable" id="unavailable" hidden>
+        Esta página necesita abrirse en claude.ai para hablar con Claude. Fuera de ahí puedes leer los playbooks de cada herramienta
+        y copiarlos, o instalarlas en Claude Code con <code>/plugin marketplace add Ootto-AI/claude-content-skills</code>.
+      </div>
+
+      <div class="panel" id="factoryPanel">
+        <h2>Fábrica completa</h2>
+        <p class="tag">Encadena seis skills en orden. Cada paso lee lo que escribió el anterior, así el guion sale del hook ganador y el caption del reel terminado.</p>
+        <label for="f_material">Reel de referencia o material extra (opcional: pega la transcripción de un reel viral, notas, resultados anteriores)
+          <textarea id="f_material" rows="3"></textarea>
+        </label>
+        <div class="row">
+          <button class="primary" id="runFactory" type="button">Ejecutar la fábrica</button>
+          <button class="ghost" id="stopFactory" type="button" hidden>Detener</button>
+          <span class="msg" id="factoryMsg"></span>
+        </div>
+        <ol class="steps" id="steps"></ol>
+      </div>
+
+      <div class="panel" id="toolPanel" hidden>
+        <h2 id="toolTitle"></h2>
+        <p class="tag" id="toolTag"></p>
+        <label for="t_material">Material para esta herramienta (transcripción, CSV, comentarios, métricas, texto largo…)
+          <textarea id="t_material" rows="4"></textarea>
+        </label>
+        <div class="row">
+          <label class="check" for="t_chain"><input type="checkbox" id="t_chain" checked> Usar resultados anteriores como contexto</label>
+        </div>
+        <div class="row">
+          <button class="primary" id="runTool" type="button">Ejecutar</button>
+          <button class="ghost" id="stopTool" type="button" hidden>Detener</button>
+          <span class="msg" id="toolMsg"></span>
+        </div>
+        <details class="playbook"><summary>Ver el playbook de la skill</summary><pre id="toolBody"></pre></details>
+      </div>
+
+      <div class="panel take">
+        <div class="label"><span id="takeLabel">Resultado</span>
+          <span class="row" style="gap:8px">
+            <button class="ghost" id="copyBtn" type="button">Copiar</button>
+            <button class="ghost" id="dlBtn" type="button" hidden>Descargar .md</button>
+          </span>
+        </div>
+        <div class="out" id="out" data-empty="Aquí aparece lo que escribe Claude. Rellena el brief y pulsa Ejecutar."></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Skills de <a href="https://github.com/Ootto-AI/claude-content-skills" target="_blank" rel="noopener">Ootto-AI/claude-content-skills</a> (MIT). Cada ejecución usa tu propia cuenta de Claude.</footer>
+</div>
+
+<script>
+const SKILLS = /*__SKILLS__*/[];
+const BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
+const FACTORY = ["going-viral", "viral-hook-writer", "reel-scripter", "reel-builder", "caption-and-hashtags", "comment-responder"].filter(id => BY_ID[id]);
+const GROUP_ORDER = ["Estudiar", "Crear", "Distribuir y convertir", "Crecer y analizar", "Más herramientas"];
+const EXAMPLE = {
+  niche: "Entrenador personal online para mujeres de 30-45", handle: "@fuerte.en.casa",
+  audience: "Mujeres ocupadas que quieren ganar fuerza en casa en 20 minutos", topic: "Por qué no ves resultados aunque entrenes 5 días",
+  goal: "leads", cta: "PLAN", offer: "Plan gratis de 4 semanas en PDF", lang: "Español",
+  voice: "Cercana y directa, tuteo, frases cortas, sin jerga de gimnasio ni promesas milagro."
+};
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("reelstudio:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("reelstudio:" + k, JSON.stringify(v)); } catch {} }
+};
+
+let sample = null, downloads = null;
+let outputs = store.get("outputs", {});        // { skillId: markdown }
+let order = store.get("order", []);            // skill ids, oldest first
+let view = { mode: "factory", tool: null, focus: null };
+let ctl = null;
+
+/* ---------- brief ---------- */
+const briefFields = ["niche", "handle", "audience", "topic", "goal", "cta", "offer", "lang", "voice"];
+function loadBrief() {
+  const saved = store.get("brief", null);
+  const b = saved || EXAMPLE;
+  briefFields.forEach(f => { $("b_" + f).value = b[f] || ""; });
+  $("exampleNote").hidden = !!saved;
+  if (saved || matchMedia("(max-width: 600px)").matches) $("brief").open = false;
+  summarizeBrief();
+}
+function brief() { return Object.fromEntries(briefFields.map(f => [f, $("b_" + f).value.trim()])); }
+function summarizeBrief() {
+  const b = brief();
+  $("briefSum").textContent = [b.handle, b.niche, b.topic && "«" + b.topic + "»"].filter(Boolean).join(" · ");
+}
+$("briefForm").addEventListener("input", () => { store.set("brief", brief()); $("exampleNote").hidden = true; summarizeBrief(); });
+$("briefForm").addEventListener("submit", e => e.preventDefault());
+
+/* ---------- rack ---------- */
+function renderRack() {
+  const q = $("filter").value.trim().toLowerCase();
+  const box = $("tools"); box.textContent = "";
+  for (const g of GROUP_ORDER) {
+    const items = SKILLS.filter(s => s.group === g && (!q || (s.title + " " + s.tagline + " " + s.id).toLowerCase().includes(q)));
+    if (!items.length) continue;
+    const sec = document.createElement("div"); sec.className = "group";
+    const h = document.createElement("h3"); h.textContent = g + " · " + items.length; sec.append(h);
+    for (const s of items) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "tool";
+      b.setAttribute("aria-pressed", String(view.mode === "tool" && view.tool === s.id));
+      const t = document.createElement("b"); t.textContent = s.title;
+      if (outputs[s.id]) { const d = document.createElement("span"); d.className = "done"; d.textContent = "HECHO"; t.append(d); }
+      const sm = document.createElement("small"); sm.textContent = s.tagline;
+      b.append(t, sm);
+      b.onclick = () => openTool(s.id);
+      sec.append(b);
+    }
+    box.append(sec);
+  }
+  $("factoryBtn").setAttribute("aria-pressed", String(view.mode === "factory"));
+}
+$("filter").addEventListener("input", renderRack);
+$("factoryBtn").onclick = () => { view = { mode: "factory", tool: null, focus: view.focus }; render(); };
+
+function openTool(id) {
+  view = { mode: "tool", tool: id, focus: id };
+  const s = BY_ID[id];
+  $("toolTitle").textContent = s.title;
+  $("toolTag").textContent = s.tagline;
+  $("toolBody").textContent = s.body;
+  $("t_material").value = store.get("material:" + id, "");
+  $("toolMsg").textContent = ""; $("toolMsg").className = "msg";
+  render();
+  if (matchMedia("(max-width: 860px)").matches) $("toolPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("t_material").addEventListener("input", () => view.tool && store.set("material:" + view.tool, $("t_material").value));
+$("f_material").addEventListener("input", () => store.set("material:factory", $("f_material").value));
+
+/* ---------- steps + output ---------- */
+const stepState = {};
+function renderSteps() {
+  const ol = $("steps"); ol.textContent = "";
+  for (const id of FACTORY) {
+    const li = document.createElement("li");
+    const st = stepState[id] || (outputs[id] ? "done" : "");
+    if (st) li.dataset.state = st;
+    li.setAttribute("aria-current", String(view.focus === id));
+    li.tabIndex = 0;
+    li.textContent = BY_ID[id].title;
+    li.onclick = li.onkeydown = e => { if (e.type === "keydown" && e.key !== "Enter") return; view.focus = id; renderOut(); renderSteps(); };
+    ol.append(li);
+  }
+}
+function md(text) {
+  if (window.marked && window.DOMPurify) {
+    const html = DOMPurify.sanitize(marked.parse(text));
+    return html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, "</table></div>");
+  }
+  return null;
+}
+function paint(el, text) {
+  const html = md(text);
+  if (html == null) { el.style.whiteSpace = "pre-wrap"; el.textContent = text; } else el.innerHTML = html;
+}
+function renderOut(live) {
+  const out = $("out");
+  if (live != null) { paint(out, live); return; }
+  const id = view.focus;
+  $("takeLabel").textContent = id ? "Resultado · " + BY_ID[id].title : "Resultado";
+  if (id && outputs[id]) paint(out, outputs[id]); else out.textContent = "";
+  $("dlBtn").hidden = !downloads || !Object.keys(outputs).length;
+}
+function render() {
+  $("factoryPanel").hidden = view.mode !== "factory";
+  $("toolPanel").hidden = view.mode !== "tool";
+  renderRack(); renderSteps(); renderOut();
+}
+
+/* ---------- prompt ---------- */
+const GOALS = { saves: "saves", shares: "shares", follows: "follows", leads: "leads via comment keyword → DM" };
+function buildPrompt(s, material, context) {
+  const b = brief();
+  const parts = [
+    `You are running the "${s.title}" skill from Ootto's Claude Content Skills for an Instagram creator. Use the skill below as your playbook and produce its deliverable now.`,
+    `Rules for this run:
+- Do not ask clarifying questions. Where the playbook asks the user for something that is missing, make a sensible assumption from the brief and label it "(assumed)".
+- You cannot browse the web, watch videos, download files or read a vault. If a step needs that, work from the material provided and say in one line what the user should paste next time for a sharper result.
+- Ignore installation, CLI and "run this command" steps in the playbook; deliver the content itself.
+- Write the whole answer in ${b.lang || "Español"}. Use Markdown with clear headings, lists and tables where they help. Model formats, never copy someone else's words.`,
+    `<skill>\n${s.body}\n</skill>`,
+    `<brief>
+Niche / business: ${b.niche || "(not given)"}
+Handle: ${b.handle || "(not given)"}
+Audience: ${b.audience || "(not given)"}
+Topic of this piece: ${b.topic || "(not given)"}
+Goal: ${GOALS[b.goal] || b.goal}
+CTA keyword: ${b.cta || "(not given)"}
+Resource / offer delivered in DM: ${b.offer || "(not given)"}
+Brand voice: ${b.voice || "(not given)"}
+</brief>`
+  ];
+  if (material) parts.push(`<material>\n${material}\n</material>`);
+  if (context) parts.push(`<previous_steps>\nOutputs from earlier skills in this session. Build on them (e.g. use the top-ranked hook, the finished script) instead of starting over.\n${context}\n</previous_steps>`);
+  return parts.join("\n\n");
+}
+function contextFrom(ids) {
+  let out = "", budget = 60000;
+  for (const id of ids.slice().reverse()) {
+    if (!outputs[id]) continue;
+    const block = `\n## ${BY_ID[id].title}\n${outputs[id]}\n`;
+    if (block.length > budget) break;
+    out = block + out; budget -= block.length;
+  }
+  return out;
+}
+const ERRORS = {
+  not_granted: "No se dio permiso para usar Claude en esta página. Ábrela de nuevo y acepta el aviso para continuar.",
+  rate_limited: "Demasiadas peticiones seguidas. Espera un minuto y vuelve a pulsar Ejecutar.",
+  prompt_too_large: "El material es demasiado largo. Recorta lo pegado o desmarca los resultados anteriores.",
+  refused: "Claude no quiso completar esta petición. Revisa el brief y el material.",
+  session_expired: "La sesión caducó. Recarga la página.",
+  sampling_disabled: "Tu cuenta u organización no permite que las páginas usen Claude.",
+  empty_completion: "Claude devolvió una respuesta vacía. Prueba otra vez.",
+};
+function errorCopy(e) { return ERRORS[e && e.code] || "No se pudo completar. " + ((e && e.message) || "Prueba otra vez."); }
+
+async function runSkill(id, material, context, onLive) {
+  const s = BY_ID[id];
+  ctl = new AbortController();
+  const { text, truncated } = await sample(buildPrompt(s, material, context), {
+    signal: ctl.signal, modelTier: "default", cache: false,
+    onText: ({ text }) => onLive(text),
+  });
+  outputs[id] = text + (truncated ? "\n\n*(Respuesta cortada por longitud.)*" : "");
+  order = order.filter(x => x !== id).concat(id);
+  store.set("outputs", outputs); store.set("order", order);
+  return outputs[id];
+}
+
+/* ---------- actions ---------- */
+function busy(on, mode) {
+  $("runFactory").disabled = on; $("runTool").disabled = on;
+  $(mode === "factory" ? "stopFactory" : "stopTool").hidden = !on;
+}
+$("runTool").onclick = async () => {
+  const id = view.tool; if (!id || !sample) return;
+  const msg = $("toolMsg"); msg.className = "msg"; msg.textContent = "";
+  view.focus = id; renderOut();
+  $("out").innerHTML = '<p class="thinking">Claude está pensando… (suele tardar entre 10 y 60 s)</p>';
+  busy(true, "tool");
+  try {
+    const ctx = $("t_chain").checked ? contextFrom(order.filter(x => x !== id)) : "";
+    await runSkill(id, $("t_material").value.trim(), ctx, t => renderOut(t));
+    msg.textContent = "Listo.";
+  } catch (e) {
+    if (e && e.text) renderOut(e.text); else renderOut();
+    if (!(e && e.code === "cancelled")) { msg.className = "msg err"; msg.textContent = errorCopy(e); }
+    else msg.textContent = "Detenido.";
+  } finally { busy(false, "tool"); renderRack(); }
+};
+$("stopTool").onclick = $("stopFactory").onclick = () => ctl && ctl.abort();
+
+$("runFactory").onclick = async () => {
+  if (!sample) return;
+  const msg = $("factoryMsg"); msg.className = "msg";
+  const material = $("f_material").value.trim();
+  FACTORY.forEach(id => { stepState[id] = ""; });
+  busy(true, "factory");
+  const done = [];
+  for (const id of FACTORY) {
+    stepState[id] = "running"; view.focus = id; renderSteps(); renderOut();
+    $("out").innerHTML = '<p class="thinking">Paso: ' + BY_ID[id].title + ' — Claude está pensando…</p>';
+    msg.textContent = "Ejecutando " + BY_ID[id].title + "…";
+    try {
+      await runSkill(id, material, contextFrom(done), t => renderOut(t));
+      done.push(id); stepState[id] = "done"; renderSteps(); renderOut();
+    } catch (e) {
+      stepState[id] = "error"; renderSteps();
+      if (e && e.text) renderOut(e.text);
+      if (e && e.code === "cancelled") msg.textContent = "Detenido en " + BY_ID[id].title + ".";
+      else { msg.className = "msg err"; msg.textContent = errorCopy(e); }
+      busy(false, "factory"); renderRack(); return;
+    }
+  }
+  msg.textContent = "Fábrica terminada. Pulsa cada paso para revisarlo.";
+  busy(false, "factory"); renderRack();
+};
+
+function allMarkdown() {
+  const b = brief();
+  return `# Reel Studio · ${b.handle || ""} · ${b.topic || ""}\n` + order.filter(id => outputs[id]).map(id => `\n\n---\n\n# ${BY_ID[id].title}\n\n${outputs[id]}`).join("");
+}
+$("copyBtn").onclick = async () => {
+  const text = view.focus && outputs[view.focus] ? outputs[view.focus] : "";
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); $("copyBtn").textContent = "Copiado"; }
+  catch { const r = document.createRange(); r.selectNodeContents($("out")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); $("copyBtn").textContent = "Seleccionado"; }
+  setTimeout(() => { $("copyBtn").textContent = "Copiar"; }, 1600);
+};
+$("dlBtn").onclick = async () => {
+  if (!downloads) return;
+  const name = "reel-studio-" + (brief().handle || "contenido").replace(/[^\w-]+/g, "") + ".md";
+  try { await downloads.save({ filename: name, data: allMarkdown() }); } catch {}
+};
+
+/* ---------- boot ---------- */
+loadBrief();
+$("f_material").value = store.get("material:factory", "");
+view.focus = order[order.length - 1] || FACTORY[0];
+render();
+(async () => {
+  const st = $("status");
+  if (!window.claude || !window.claude.use) { st.className = "status off"; st.lastChild.textContent = "Sin conexión con Claude"; $("unavailable").hidden = false; $("runFactory").disabled = $("runTool").disabled = true; return; }
+  [sample, downloads] = await Promise.all(["sample", "downloads"].map(n => window.claude.use(n).catch(() => null)));
+  if (sample) { st.className = "status on"; st.lastChild.textContent = "Claude conectado · " + SKILLS.length + " herramientas"; }
+  else { st.className = "status off"; st.lastChild.textContent = "Sin conexión con Claude"; $("unavailable").hidden = false; $("runFactory").disabled = $("runTool").disabled = true; }
+  renderOut();
+})();
+</script>
